@@ -1,5 +1,4 @@
 # site-sniffing
-Python site sniffier 
 
 The purpose of this script is to collect normal traffic and DOS traffic using THC-SSL-DOS implemented in a Kali Linux environment.
 
