@@ -3,7 +3,6 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 import socket
 import subprocess
-import signal
 import psutil
 import datetime
 import logging
@@ -84,7 +83,12 @@ for website in domains:
 
     # Getting list of possible ip from the particular domain
     ip_list = []
-    socket_info = socket.getaddrinfo(domain_socket, None)
+    try:
+        socket_info = socket.getaddrinfo(domain_socket, None)
+    except socket.gaierror as e:
+        logging.error(str(e) + str(domain_socket))
+        continue
+
     for info in socket_info:
         ip_list.append(info[4][0])
 
@@ -96,6 +100,7 @@ for website in domains:
         continue
     except urllib.error.URLError as e:
         logging.error(str(e) + str(domain_urllib))
+        continue
 
     # Scrapping the links from the html page
     links = []
@@ -108,8 +113,6 @@ for website in domains:
     for link in links:
         if "#" not in link:
             cleanLinks.append(link)
-
-    print(cleanLinks)
 
     # SNIFFER
     # Declaring variables for the sniffer
