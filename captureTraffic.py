@@ -20,7 +20,7 @@ from selenium.common.exceptions import TimeoutException
 from fake_useragent import UserAgent
 
 excel_dir = "./report_unique_servers2.xlsx"
-df = pd.read_excel(excel_dir, sheet_name="complete_list")
+df = pd.read_excel(excel_dir, sheet_name="social_media")
 
 start_index = int(sys.argv[1])
 end_index = int(sys.argv[2])
