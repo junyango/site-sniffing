@@ -1,7 +1,7 @@
 # site-sniffing
 
-The purpose of this script is to collect normal traffic and DOS traffic using THC-SSL-DOS implemented in a Kali Linux environment.
+capture_youtube is meant to scrape URLs from youtube videos and automate the packet capture.
 
-captureTraffic.py is meant to be used in a Windows Environment 
+capture_normal is meant to capture normal traffic from a given CSV file
 
-standalone_dos_traffic.py is meant to be used in a Linux Environment
+dos_traffic is meant to simulate a dos attack to collect traffic from it
