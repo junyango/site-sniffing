@@ -27,7 +27,7 @@ if not os.path.exists(args.savedir):
 
 output_prefix = args.savedir
 
-logging.basicConfig(filename='capture_youtube.log', level=logging.INFO, format='%(asctime)s-%(levelname)s-%(message)s')
+logging.basicConfig(filename='scrap_url.log', level=logging.INFO, format='%(asctime)s-%(levelname)s-%(message)s')
 
 iterations = int(args.iterations)
 
