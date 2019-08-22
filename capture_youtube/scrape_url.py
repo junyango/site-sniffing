@@ -13,7 +13,7 @@ youtube_url = "http://www.youtube.com"
 datetime_now = datetime.now()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--category', help='Input location for file categories')
+parser.add_argument('-c', '--category', help='Input location for file categories', required=True)
 parser.add_argument('-i', '--iterations', help='Input amount of URLs to scrape', required=True)
 parser.add_argument('-s', '--savedir', help='Input the directory path to save csv file in', required=True)
 args = parser.parse_args()
