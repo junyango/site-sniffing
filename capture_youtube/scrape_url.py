@@ -61,7 +61,8 @@ for category in categories:
     driver.get(youtube_url)
     driver.find_element_by_id("search").send_keys(category)
     driver.find_element_by_id("search-icon-legacy").click()
-
+    time.sleep(2)
+    
     while len(url_category) < each_category:
         try:
             elements = driver.find_elements_by_xpath("//a[@href]")
@@ -70,18 +71,23 @@ for category in categories:
             continue
 
         for element in elements:
-            try :
+            try:
                 link = element.get_attribute("href")
             except NoSuchAttributeException as nsae:
                 logging.exception(str(nsae) + " NO ATTRIBUTES FOUND")
                 continue
-            if "/watch" in link and link not in url_category:
+            if "/watch" in link and link not in url_category and "t=" not in link:
                 url_category.append(link)
                 logging.info("Added " + link)
             else:
                 continue
 
-        random_url = random.choice(url_category)
+        try:
+            random_url = random.choice(url_category)
+        except IndexError as ie:
+            logging.error(str(ie))
+            continue
+
         logging.info("Moving on to " + random_url)
         driver.get(random_url)
         time.sleep(2)
