@@ -113,20 +113,3 @@ print("Successfully output to CSV file and closing chrome now")
 logging.info("Successfully output to CSV file and closing chrome now")
 
 driver.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
