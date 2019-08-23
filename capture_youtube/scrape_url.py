@@ -62,7 +62,7 @@ for category in categories:
     driver.find_element_by_id("search").send_keys(category)
     driver.find_element_by_id("search-icon-legacy").click()
     time.sleep(2)
-    
+
     while len(url_category) < each_category:
         try:
             elements = driver.find_elements_by_xpath("//a[@href]")
