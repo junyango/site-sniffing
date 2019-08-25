@@ -5,9 +5,9 @@ import datetime
 import logging
 import socket
 import random
-import urllib
 from fake_useragent import UserAgent
-import urllib.request
+import time
+import signal
 from urllib.request import Request, urlopen
 import urllib.error
 import argparse
@@ -73,12 +73,14 @@ def clean_domain(url):
 # Getting the abs path of chromedriver for selenium automation
 cdPath = "../chromedriver/chromedriver.exe"
 chromeDriverPath = os.path.abspath(cdPath)
-driver = webdriver.Chrome(chromeDriverPath)
 
 
 for ip in ip_list[s]:
+
+    driver = webdriver.Chrome(chromeDriverPath)
     # Getting domain
     domain = dictionary[ip]
+    print("testing " + domain)
 
     # Check if website has http
     if "http" not in domain:
@@ -114,7 +116,7 @@ for ip in ip_list[s]:
     # Capture filter ip_list[0] is taken as the first IP resolved to capture
     # Might not be too perfect in the case
     abspath = os.path.abspath(file_path)
-    interface = "Wi-Fi"
+    interface = "Ethernet"
     capture_filter = "tcp port 443 and host " + ip
     filename = abspath + "\\" + domain + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pcap"
 
@@ -122,19 +124,33 @@ for ip in ip_list[s]:
     # command = ["tshark", "-i", interface, "-a", "duration:120", "-f", capture_filter, "-w", filename]
     command = ["tshark", "-i", interface, "-c", "5000", "-f", capture_filter, "-w", filename]
     sts = subprocess.Popen(command, shell=True)
+    time.sleep(2)
 
+    driver.get(domain_urllib)
+
+    # This polls for the return code of the tshark process, once 200 packets have been captured, expected return : 0
+    count = 0
+    timeout = 50
     while 1:
-        tshark = os.popen("tasklist | findstr tshark").read()
-        if tshark == "":
-            print("Tshark has stopped")
+        count += 1
+        return_code = sts.poll()
+        if return_code == 0 or count >= timeout:
+            if return_code == 0:
+                print("tshark has terminated gracefully")
+                logging.info("tshark has terminated gracefully")
+            elif count >= timeout:
+                print("timeout has been reached")
+                logging.info("timeout has been reached")
+                os.kill(sts.pid, signal.SIGINT)
+                tshark = os.popen("tasklist | findstr tshark").read()
+                os.kill(tshark, signal.SIGINT)
             break
         else:
             if len(cleanLinks) > 1:
                 link = random.choice(cleanLinks)
-                print(link + " has been chosen")
                 ip_socket = []
                 if "http" not in link and ".com" not in link:
-                    seleniumLink = "http://" + domain + link
+                    seleniumLink = "https://" + domain + link
                     socketLink = domain
                 else:
                     seleniumLink = link
@@ -167,6 +183,9 @@ for ip in ip_list[s]:
                         continue
             else:
                 continue
+
+    count = 0
+    driver.close()
 
 # Terminate selenium
 driver.quit()
