@@ -210,7 +210,7 @@ for ip in ip_list[s]:
         logging.exception(str(toe) + " Driver failed to close")
     except UnexpectedAlertPresentException as uape:
         logging.exception(str(uape) + " unexpected alert present!")
-        driver.switch_to().alert().accept()
+        driver.switch_to.alert.accept()
         driver.close()
 
 
