@@ -124,9 +124,13 @@ for ip in ip_list[s]:
     # command = ["tshark", "-i", interface, "-a", "duration:120", "-f", capture_filter, "-w", filename]
     command = ["tshark", "-i", interface, "-c", "5000", "-f", capture_filter, "-w", filename]
     sts = subprocess.Popen(command, shell=True)
-    time.sleep(2)
-
-    driver.get(domain_urllib)
+    time.sleep(5)
+    
+    try:
+        driver.get(domain_urllib)
+    except TimeoutException as toe:
+        logging.exception(str(toe) + " for " + domain_urllib)
+        continue
 
     # This polls for the return code of the tshark process, once 200 packets have been captured, expected return : 0
     count = 0
@@ -142,8 +146,6 @@ for ip in ip_list[s]:
                 print("timeout has been reached")
                 logging.info("timeout has been reached")
                 os.kill(sts.pid, signal.SIGINT)
-                tshark = os.popen("tasklist | findstr tshark").read()
-                os.kill(tshark, signal.SIGINT)
             break
         else:
             if len(cleanLinks) > 1:
