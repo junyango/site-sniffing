@@ -16,6 +16,7 @@ import sys
 from selenium.common.exceptions import InvalidArgumentException
 import pandas as pd
 from selenium.common.exceptions import TimeoutException
+import http.client
 
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
@@ -73,11 +74,15 @@ def clean_domain(url):
 # Getting the abs path of chromedriver for selenium automation
 cdPath = "../chromedriver/chromedriver.exe"
 chromeDriverPath = os.path.abspath(cdPath)
+options = webdriver.ChromeOptions()
+options.add_argument('--ignore-certificate-errors')
+options.add_argument('--ignore-ssl-errors')
+driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
 
 
 for ip in ip_list[s]:
-
-    driver = webdriver.Chrome(chromeDriverPath)
+    # Setting a timeout of 30 seconds if the page doesnt load it will timeout
+    driver.set_page_load_timeout(30)
     # Getting domain
     domain = dictionary[ip]
     print("testing " + domain)
@@ -103,6 +108,12 @@ for ip in ip_list[s]:
         continue
     except urllib.error.URLError as urle:
         logging.error(str(urle) + " for " + domain_urllib)
+        continue
+    except TimeoutError as toe:
+        logging.error(str(toe) + " for " + domain_urllib)
+        continue
+    except http.client.HTTPException as httpexcep:
+        logging.error(str(httpexcep) + " for " + domain_urllib)
         continue
 
     soup = BeautifulSoup(resp, "html.parser")
@@ -187,7 +198,12 @@ for ip in ip_list[s]:
                 continue
 
     count = 0
-    driver.close()
+
+    try:
+        driver.close()
+    except TimeoutException as toe:
+        logging.exception(str(toe) + " Driver failed to close")
+
 
 # Terminate selenium
 driver.quit()
