@@ -16,6 +16,7 @@ import sys
 from selenium.common.exceptions import InvalidArgumentException
 import pandas as pd
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import InvalidSessionIdException
 import http.client
 
 excel_dir = "./report_unique_servers2.xlsx"
@@ -139,6 +140,9 @@ for ip in ip_list[s]:
         driver.get(domain_urllib)
     except TimeoutException as toe:
         logging.exception(str(toe) + " for " + domain_urllib)
+        continue
+    except InvalidSessionIdException isie:
+        logging.exception(str(isie) + " for " + domain_urllib)
         continue
 
     # This polls for the return code of the tshark process, once 200 packets have been captured, expected return : 0
