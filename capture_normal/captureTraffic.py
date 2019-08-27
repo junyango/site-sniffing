@@ -141,7 +141,7 @@ for ip in ip_list[s]:
     except TimeoutException as toe:
         logging.exception(str(toe) + " for " + domain_urllib)
         continue
-    except InvalidSessionIdException isie:
+    except InvalidSessionIdException as isie:
         logging.exception(str(isie) + " for " + domain_urllib)
         continue
 
