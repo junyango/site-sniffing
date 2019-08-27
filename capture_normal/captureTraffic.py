@@ -81,8 +81,6 @@ driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
 
 
 for ip in ip_list[s]:
-    # Setting a timeout of 30 seconds if the page doesnt load it will timeout
-    driver.set_page_load_timeout(30)
     # Getting domain
     domain = dictionary[ip]
     print("testing " + domain)
