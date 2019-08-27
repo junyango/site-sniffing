@@ -76,12 +76,11 @@ def clean_domain(url):
 # Getting the abs path of chromedriver for selenium automation
 cdPath = "../chromedriver/chromedriver.exe"
 chromeDriverPath = os.path.abspath(cdPath)
-options = webdriver.ChromeOptions()
-options.add_argument('--ignore-certificate-errors')
-options.add_argument('--ignore-ssl-errors')
-
 
 for ip in ip_list[s]:
+    options = webdriver.ChromeOptions()
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--ignore-ssl-errors')
     driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
     # Getting domain
     domain = dictionary[ip]
