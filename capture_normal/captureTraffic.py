@@ -17,6 +17,7 @@ from selenium.common.exceptions import InvalidArgumentException
 import pandas as pd
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSessionIdException
+from selenium.common.exceptions import UnexpectedAlertPresentException
 import http.client
 
 excel_dir = "./report_unique_servers2.xlsx"
@@ -78,10 +79,10 @@ chromeDriverPath = os.path.abspath(cdPath)
 options = webdriver.ChromeOptions()
 options.add_argument('--ignore-certificate-errors')
 options.add_argument('--ignore-ssl-errors')
-driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
 
 
 for ip in ip_list[s]:
+    driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
     # Getting domain
     domain = dictionary[ip]
     print("testing " + domain)
@@ -139,15 +140,18 @@ for ip in ip_list[s]:
     try:
         driver.get(domain_urllib)
     except TimeoutException as toe:
+        print("Timeout, moving onto next site")
         logging.exception(str(toe) + " for " + domain_urllib)
         continue
     except InvalidSessionIdException as isie:
+        print("Invalid session id, moving on to the next site")
         logging.exception(str(isie) + " for " + domain_urllib)
         continue
 
     # This polls for the return code of the tshark process, once 200 packets have been captured, expected return : 0
     count = 0
     timeout = 50
+
     while 1:
         count += 1
         return_code = sts.poll()
@@ -205,6 +209,10 @@ for ip in ip_list[s]:
         driver.close()
     except TimeoutException as toe:
         logging.exception(str(toe) + " Driver failed to close")
+    except UnexpectedAlertPresentException as uape:
+        logging.exception(str(uape) + " unexpected alert present!")
+        driver.switch_to().alert().accept()
+        driver.close()
 
 
 # Terminate selenium
