@@ -18,6 +18,8 @@ import pandas as pd
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSessionIdException
 from selenium.common.exceptions import UnexpectedAlertPresentException
+from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import WebDriverException
 import http.client
 
 excel_dir = "./report_unique_servers2.xlsx"
@@ -81,7 +83,13 @@ for ip in ip_list[s]:
     options = webdriver.ChromeOptions()
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--ignore-ssl-errors')
-    driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
+    try:
+        driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
+    except SessionNotCreatedException as snce:
+        logging.exception(str(snce) + " session failed to create")
+        driver.close()
+        driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
+
     # Getting domain
     domain = dictionary[ip]
     print("testing " + domain)
@@ -197,6 +205,12 @@ for ip in ip_list[s]:
                         except TimeoutException as te:
                             logging.info(str(te) + "Time Out Exception " + str(seleniumLink))
                             continue
+                        except UnexpectedAlertPresentException as uape:
+                            logging.exception(str(uape) + " unexpected alert present!")
+                            driver.switch_to.alert.accept()
+                        except WebDriverException as wde:
+                            logging.exception(str(wde) + " webdriver exception!")
+                            driver.switch_to.alert.accept()
                     else:
                         continue
             else:
@@ -205,13 +219,15 @@ for ip in ip_list[s]:
     count = 0
 
     try:
-        driver.close()
+        driver.quit()
     except TimeoutException as toe:
         logging.exception(str(toe) + " Driver failed to close")
     except UnexpectedAlertPresentException as uape:
         logging.exception(str(uape) + " unexpected alert present!")
         driver.switch_to.alert.accept()
-        driver.close()
+        driver.quit()
+    finally:
+        driver.quit()
 
 
 # Terminate selenium
