@@ -230,7 +230,11 @@ for ip in ip_list[s]:
 
 
 # Terminate selenium
-driver.quit()
+try:
+    driver.quit()
+except NameError as NE:
+    logging.error(str(NE))
+
 logging.info("Done with testing... Killing cmd and dumpcap now...")
 
 
