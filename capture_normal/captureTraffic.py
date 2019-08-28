@@ -87,8 +87,7 @@ for ip in ip_list[s]:
         driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
     except SessionNotCreatedException as snce:
         logging.exception(str(snce) + " session failed to create")
-        driver.close()
-        driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
+        continue
 
     # Getting domain
     domain = dictionary[ip]
