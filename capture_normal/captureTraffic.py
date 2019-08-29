@@ -21,6 +21,8 @@ from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import WebDriverException
 import http.client
+import ssl
+import psutil
 
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
@@ -82,12 +84,16 @@ chromeDriverPath = os.path.abspath(cdPath)
 for ip in ip_list[s]:
     options = webdriver.ChromeOptions()
     options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--ignore-certificate-errors-spki-list')
     options.add_argument('--ignore-ssl-errors')
     try:
-        driver = webdriver.Chrome(chromeDriverPath, chrome_options=options)
+        driver = webdriver.Chrome(chromeDriverPath, options=options)
     except SessionNotCreatedException as snce:
         logging.exception(str(snce) + " session failed to create")
         continue
+
+    # Setting a timeout for the page load to hasten the process
+    driver.set_page_load_timeout(time_to_wait=30)
 
     # Getting domain
     domain = dictionary[ip]
@@ -121,6 +127,9 @@ for ip in ip_list[s]:
     except http.client.HTTPException as httpexcep:
         logging.error(str(httpexcep) + " for " + domain_urllib)
         continue
+    except ssl.CertificateError as sslCE:
+        logging.error(str(sslCE) + " for " + domain_urllib)
+        continue
 
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
@@ -140,7 +149,7 @@ for ip in ip_list[s]:
     # Raw capturing
     # command = ["tshark", "-i", interface, "-a", "duration:120", "-f", capture_filter, "-w", filename]
     command = ["tshark", "-i", interface, "-c", "5000", "-f", capture_filter, "-w", filename]
-    sts = subprocess.Popen(command, shell=True)
+    sts = subprocess.Popen(command, shell=False)
     time.sleep(5)
     
     try:
@@ -168,7 +177,17 @@ for ip in ip_list[s]:
             elif count >= timeout:
                 print("timeout has been reached")
                 logging.info("timeout has been reached")
-                os.kill(sts.pid, signal.SIGINT)
+                for proc in psutil.process_iter():
+                    # check whether the process name matches
+                    if proc.pid == sts.pid:
+                        try:
+                            proc.kill()
+                        except psutil.NoSuchProcess as nsp:
+                            logging.error(str(nsp))
+                        finally:
+                            break
+                    else:
+                        continue
             break
         else:
             if len(cleanLinks) > 1:
@@ -207,9 +226,10 @@ for ip in ip_list[s]:
                         except UnexpectedAlertPresentException as uape:
                             logging.exception(str(uape) + " unexpected alert present!")
                             driver.switch_to.alert.accept()
+                            continue
                         except WebDriverException as wde:
                             logging.exception(str(wde) + " webdriver exception!")
-                            driver.switch_to.alert.accept()
+                            continue
                     else:
                         continue
             else:
