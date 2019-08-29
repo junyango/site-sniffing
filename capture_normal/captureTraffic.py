@@ -7,7 +7,6 @@ import socket
 import random
 from fake_useragent import UserAgent
 import time
-import signal
 from urllib.request import Request, urlopen
 import urllib.error
 import argparse
@@ -130,6 +129,9 @@ for ip in ip_list[s]:
     except ssl.CertificateError as sslCE:
         logging.error(str(sslCE) + " for " + domain_urllib)
         continue
+    except ConnectionResetError as cre:
+        logging.error(str(cre) + " for " + domain_urllib)
+        continue
 
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
@@ -230,6 +232,8 @@ for ip in ip_list[s]:
                         except WebDriverException as wde:
                             logging.exception(str(wde) + " webdriver exception!")
                             continue
+                        finally:
+                            break
                     else:
                         continue
             else:
