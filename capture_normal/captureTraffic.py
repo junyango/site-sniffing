@@ -236,6 +236,8 @@ for ip in ip_list[s]:
                         finally:
                             break
                     else:
+                        print("No links available to press sending multiple get requests to the actual server")
+                        logging.info("Sending GET requests to " + ip + " " + domain)
                         requests.get(ip, headers={'Host': domain})
                         continue
             else:
@@ -260,6 +262,7 @@ try:
     driver.quit()
 except NameError as NE:
     logging.error(str(NE))
+    driver.close()  
 
 logging.info("Done with testing... Killing cmd and dumpcap now...")
 
