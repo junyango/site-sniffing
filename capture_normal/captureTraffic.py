@@ -250,10 +250,9 @@ for ip in ip_list[s]:
                         except Timeout as toe:
                             logging.error(str(toe))
                         except RequestException as re:
-                            logging.exception(str(toe))
-                        
-                        break
-                    
+                            logging.exception(str(re))
+                        finally:
+                            break
             else:
                 continue
 
