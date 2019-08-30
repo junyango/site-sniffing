@@ -22,6 +22,7 @@ from selenium.common.exceptions import WebDriverException
 import http.client
 import ssl
 import psutil
+import requests
 
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
@@ -235,6 +236,7 @@ for ip in ip_list[s]:
                         finally:
                             break
                     else:
+                        requests.get(ip, headers={'Host': domain})
                         continue
             else:
                 continue
