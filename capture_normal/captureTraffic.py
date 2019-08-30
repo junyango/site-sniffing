@@ -23,6 +23,9 @@ import http.client
 import ssl
 import psutil
 import requests
+from requests import HTTPError
+from requests import Timeout
+from requests import RequestException
 
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
@@ -236,10 +239,21 @@ for ip in ip_list[s]:
                         finally:
                             break
                     else:
-                        print("No links available to press sending multiple get requests to the actual server")
+                        print("Sending GET requests!")
                         logging.info("Sending GET requests to " + ip + " " + domain)
-                        requests.get(ip, headers={'Host': domain})
-                        continue
+                        try:
+                            requests.get("http://" + ip, headers={'User-Agent': ua.random}, timeout=5)
+                        except ConnectionError as ce:
+                            logging.error(str(ce))
+                        except HTTPError as httperr:
+                            logging.error(str(httperr))
+                        except Timeout as toe:
+                            logging.error(str(toe))
+                        except RequestException as re:
+                            logging.exception(str(toe))
+                        
+                        break
+                    
             else:
                 continue
 
