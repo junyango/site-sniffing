@@ -136,6 +136,9 @@ for ip in ip_list[s]:
     except ConnectionResetError as cre:
         logging.error(str(cre) + " for " + domain_urllib)
         continue
+    except UnicodeEncodeError as uee:
+        logging.error(str(uee) + " for " + domain_urllib)
+        continue
 
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
