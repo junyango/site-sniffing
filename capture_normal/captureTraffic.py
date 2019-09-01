@@ -103,12 +103,13 @@ for ip in ip_list[s]:
     print("testing " + domain)
 
     # Check if website has http
-    if "http" not in domain:
+    if domain[0:7] != "http://":
         # appending https:// for urllib
         domain_urllib = "https://" + domain
     else:
         domain_urllib = domain
 
+    print(domain_urllib)
     headers = {'User-Agent': ua.random}
     req = Request(
         domain_urllib,
