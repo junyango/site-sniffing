@@ -139,6 +139,9 @@ for ip in ip_list[s]:
     except UnicodeEncodeError as uee:
         logging.error(str(uee) + " for " + domain_urllib)
         continue
+    except ValueError as ve:
+        logging.error(str(ve) + " for " + domain_urllib)
+        continue
 
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
@@ -268,7 +271,7 @@ for ip in ip_list[s]:
     except UnexpectedAlertPresentException as uape:
         logging.exception(str(uape) + " unexpected alert present!")
         driver.switch_to.alert.accept()
-        driver.quit()
+        driver.close()
     finally:
         driver.quit()
 
