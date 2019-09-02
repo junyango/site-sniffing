@@ -23,6 +23,9 @@ import http.client
 import ssl
 import psutil
 import requests
+from requests import HTTPError
+from requests import Timeout
+from requests import RequestException
 
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
@@ -100,12 +103,13 @@ for ip in ip_list[s]:
     print("testing " + domain)
 
     # Check if website has http
-    if "http" not in domain:
+    if domain[0:7] != "http://":
         # appending https:// for urllib
         domain_urllib = "https://" + domain
     else:
         domain_urllib = domain
 
+    print(domain_urllib)
     headers = {'User-Agent': ua.random}
     req = Request(
         domain_urllib,
@@ -132,6 +136,12 @@ for ip in ip_list[s]:
         continue
     except ConnectionResetError as cre:
         logging.error(str(cre) + " for " + domain_urllib)
+        continue
+    except UnicodeEncodeError as uee:
+        logging.error(str(uee) + " for " + domain_urllib)
+        continue
+    except ValueError as ve:
+        logging.error(str(ve) + " for " + domain_urllib)
         continue
 
     soup = BeautifulSoup(resp, "html.parser")
@@ -236,8 +246,20 @@ for ip in ip_list[s]:
                         finally:
                             break
                     else:
-                        requests.get(ip, headers={'Host': domain})
-                        continue
+                        print("Sending GET requests!")
+                        logging.info("Sending GET requests to " + ip + " " + domain)
+                        try:
+                            requests.get("http://" + ip, headers={'User-Agent': ua.random}, timeout=5)
+                        except ConnectionError as ce:
+                            logging.error(str(ce))
+                        except HTTPError as httperr:
+                            logging.error(str(httperr))
+                        except Timeout as toe:
+                            logging.error(str(toe))
+                        except RequestException as re:
+                            logging.exception(str(re))
+                        finally:
+                            break
             else:
                 continue
 
@@ -250,7 +272,7 @@ for ip in ip_list[s]:
     except UnexpectedAlertPresentException as uape:
         logging.exception(str(uape) + " unexpected alert present!")
         driver.switch_to.alert.accept()
-        driver.quit()
+        driver.close()
     finally:
         driver.quit()
 
@@ -260,6 +282,7 @@ try:
     driver.quit()
 except NameError as NE:
     logging.error(str(NE))
+    driver.close()  
 
 logging.info("Done with testing... Killing cmd and dumpcap now...")
 
