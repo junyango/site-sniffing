@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 import sys
 from selenium.common.exceptions import InvalidArgumentException
 import pandas as pd
+import numpy as np
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSessionIdException
 from selenium.common.exceptions import UnexpectedAlertPresentException
@@ -226,8 +227,8 @@ for ip in ip_list[s]:
                     ip_socket.append(info[4][0])
 
                 for ip_test in ip_socket:
-                    # Introducing sleep between 2 to 6 seconds to allow simulation of user behaviour
-                    time.sleep(np.random.randint(low=2, high=6))
+                    # Introducing sleep between 3 to 8 seconds to allow simulation of user behaviour
+                    time.sleep(np.random.randint(low=3, high=8))
                     if ip_test == ip:
                         try:
                             driver.get(seleniumLink)
