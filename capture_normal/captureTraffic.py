@@ -226,6 +226,8 @@ for ip in ip_list[s]:
                     ip_socket.append(info[4][0])
 
                 for ip_test in ip_socket:
+                    # Introducing sleep between 2 to 6 seconds to allow simulation of user behaviour
+                    time.sleep(np.random.randint(low=2, high=6))
                     if ip_test == ip:
                         try:
                             driver.get(seleniumLink)
@@ -262,6 +264,8 @@ for ip in ip_list[s]:
                             break
             else:
                 continue
+
+
 
     count = 0
 
