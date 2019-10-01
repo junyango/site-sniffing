@@ -271,6 +271,14 @@ for ip in ip_list[s]:
 
     count = 0
 
+    # Kill chrome processes to clear memory to avoid virtual memory problem
+    parent = psutil.Process(driver.service.process.pid)
+    chromeProcesses = (parent.children(recursive=True))
+    if chromeProcesses != "":
+        for process in chromeProcesses:
+            p = psutil.Process(process.pid)
+            p.kill()
+
     # Kill chromedriver processes
     try:
         driver.quit()
@@ -281,13 +289,6 @@ for ip in ip_list[s]:
         driver.switch_to.alert.accept()
     finally:
         driver.quit()
-
-    # Kill chrome processes to clear memory to avoid virtual memory problem
-    parent = psutil.Process(driver.service.process.pid)
-    chromeProcesses = (parent.children(recursive=True))
-    for process in chromeProcesses:
-        p = psutil.Process(process.pid)
-        p.kill()
 
 # Terminate selenium
 try:
