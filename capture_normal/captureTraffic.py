@@ -144,6 +144,9 @@ for ip in ip_list[s]:
     except ValueError as ve:
         logging.error(str(ve) + " for " + domain_urllib)
         continue
+    except OSError as oe:
+        logging.error(str(oe) + " for " + domain_urllib)
+        continue
 
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
