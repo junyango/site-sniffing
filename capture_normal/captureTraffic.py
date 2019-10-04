@@ -276,8 +276,12 @@ for ip in ip_list[s]:
     chromeProcesses = (parent.children(recursive=True))
     if chromeProcesses != "":
         for process in chromeProcesses:
-            p = psutil.Process(process.pid)
-            p.kill()
+            try:
+                p = psutil.Process(process.pid)
+                p.kill()
+            except psutil.NoSuchProcess as nsp:
+                logging.error(nsp)
+                continue
 
     # Kill chromedriver processes
     try:
