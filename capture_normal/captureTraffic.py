@@ -278,6 +278,9 @@ for ip in ip_list[s]:
     except psutil.NoSuchProcess as nsp:
         logging.error(str(nsp) + "parent")
         continue
+    except AttributeError as ae:
+        logging.error(str(ae) + "parent")
+        continue
     chromeProcesses = (parent.children(recursive=True))
     if chromeProcesses != "":
         for process in chromeProcesses:
