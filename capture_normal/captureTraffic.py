@@ -189,6 +189,7 @@ for ip in ip_list[s]:
                             break
                     else:
                         continue
+            driver.quit()
             break
         else:
             # Condition to check if webpage has more than 1 link scraped from the HTML
@@ -272,7 +273,11 @@ for ip in ip_list[s]:
     count = 0
 
     # Kill chrome processes to clear memory to avoid virtual memory problem
-    parent = psutil.Process(driver.service.process.pid)
+    try:
+        parent = psutil.Process(driver.service.process.pid)
+    except psutil.NoSuchProcess as nsp:
+        logging.error(str(nsp) + "parent")
+        continue
     chromeProcesses = (parent.children(recursive=True))
     if chromeProcesses != "":
         for process in chromeProcesses:
