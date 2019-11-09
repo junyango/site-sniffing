@@ -1,88 +1,72 @@
-import os
-from selenium import webdriver
-import subprocess
-import datetime
-import logging
-import socket
-import random
-from fake_useragent import UserAgent
-import time
-from urllib.request import Request, urlopen
-import urllib.error
 import argparse
-from bs4 import BeautifulSoup
-import sys
-from selenium.common.exceptions import InvalidArgumentException
-import pandas as pd
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import InvalidSessionIdException
-from selenium.common.exceptions import UnexpectedAlertPresentException
-from selenium.common.exceptions import SessionNotCreatedException
-from selenium.common.exceptions import WebDriverException
+import datetime
 import http.client
+import logging
+import os
+import random
+import socket
 import ssl
+import subprocess
+import time
+import urllib.error
+from urllib.request import Request, urlopen
+
+import numpy as np
+import pandas as pd
 import psutil
 import requests
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
 from requests import HTTPError
-from requests import Timeout
 from requests import RequestException
+from requests import Timeout
+from selenium import webdriver
+from selenium.common.exceptions import InvalidArgumentException
+from selenium.common.exceptions import InvalidSessionIdException
+from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import UnexpectedAlertPresentException
+from selenium.common.exceptions import WebDriverException
 
+logging.basicConfig(filename='capture_traffic.log', level=logging.INFO, format='%(asctime)s-%(levelname)s-%(message)s')
+
+# Reading from the excel sheet in the folder
 excel_dir = "./report_unique_servers2.xlsx"
 print("Reading from excel file now for the list of sites to test...")
 df = pd.read_excel(excel_dir, sheet_name="complete_list")
+ip_list = df['IP']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--start', help='Start index of the csv file')
-parser.add_argument('-e', '--end', help='End index of the csv file')
+parser.add_argument('-s', '--start', help='Start index of the csv file', required=True)
+parser.add_argument('-e', '--end', help='End index of the csv file', required=True)
 args = parser.parse_args()
 
-if len(sys.argv) <= 2:
-    print("Usage: <start_index> <end_index>")
-    exit(1)
 
+# Slicing returns row start end row end in excel sheet
 start_index = int(args.start)
 end_index = int(args.end)
-
-# To be applied to the CSV file
 s = slice(start_index, end_index)
-
-dictionary = {}
-ip_list = df['IP']
-ua = UserAgent()
 
 # Initializing the dictionary to be able to retrieve the names easily
 # Different IP (Key) lead to same Domain (Value)
+dictionary = {}
 for index, row in df.iterrows():
     domain = row['Domain']
     ip = row['IP']
 
     dictionary[ip] = domain
 
-logging.basicConfig(filename='capture_traffic.log', level=logging.INFO, format='%(asctime)s-%(levelname)s-%(message)s')
-
 file_path = os.path.join("output/normal_traffic/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 if not os.path.exists(file_path):
     os.makedirs(file_path)
-
-
-def clean_domain(url):
-    if "https://" in url:
-        result = url[8:]
-    elif "http://" in url:
-        result = url[7:]
-    else:
-        result = url
-
-    if "/" in result:
-        result = result.split("/")[0]
-
-    return result
-
 
 # Finding the chromedriver path to start selenium web driver
 # Getting the abs path of chromedriver for selenium automation
 cdPath = "../chromedriver/chromedriver.exe"
 chromeDriverPath = os.path.abspath(cdPath)
+
+# Initializing an instance of fake_useragent for requests purposes
+ua = UserAgent()
 
 for ip in ip_list[s]:
     options = webdriver.ChromeOptions()
@@ -109,14 +93,16 @@ for ip in ip_list[s]:
     else:
         domain_urllib = domain
 
-    print(domain_urllib)
+    # Declaring headers for HTTP get request with User Agent to ensure the loading of all pages
+    # Simulates real user behaviour with browser interaction
     headers = {'User-Agent': ua.random}
     req = Request(
         domain_urllib,
         headers={'User-Agent': ua.random}
     )
 
-    # Trying to open the URL to scrape HTML
+    # Using urlopen to get the html response code to be passed to BeautifulSoup
+    # Large number possible error handling experienced during the capturing process
     try:
         resp = urlopen(req).read()
     except urllib.error.HTTPError as httpe:
@@ -143,7 +129,11 @@ for ip in ip_list[s]:
     except ValueError as ve:
         logging.error(str(ve) + " for " + domain_urllib)
         continue
+    except OSError as oe:
+        logging.error(str(oe) + " for " + domain_urllib)
+        continue
 
+    # HTML parsing to extract all links
     soup = BeautifulSoup(resp, "html.parser")
     cleanLinks = []
     for link in soup.find_all('a', href=True):
@@ -151,20 +141,18 @@ for ip in ip_list[s]:
             cleanLinks.append(link["href"])
 
     # SNIFFER
-    # Declaring variables for the sniffer
-    # Capture filter ip_list[0] is taken as the first IP resolved to capture
-    # Might not be too perfect in the case
     abspath = os.path.abspath(file_path)
     interface = "Ethernet"
     capture_filter = "tcp port 443 and host " + ip
     filename = abspath + "\\" + domain + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pcap"
 
-    # Raw capturing
-    # command = ["tshark", "-i", interface, "-a", "duration:120", "-f", capture_filter, "-w", filename]
+    # Raw capturing via subprocess.Popen
+    # Sleep is included to ensure tshark has ample time to run before automating browser
     command = ["tshark", "-i", interface, "-c", "5000", "-f", capture_filter, "-w", filename]
     sts = subprocess.Popen(command, shell=False)
     time.sleep(5)
-    
+
+    # Attempt to enter the main site, if the site does not exists, exit the loop to continue to next website
     try:
         driver.get(domain_urllib)
     except TimeoutException as toe:
@@ -176,7 +164,7 @@ for ip in ip_list[s]:
         logging.exception(str(isie) + " for " + domain_urllib)
         continue
 
-    # This polls for the return code of the tshark process, once 200 packets have been captured, expected return : 0
+    # This polls for the return code of the tshark process, once 5000 packets have been captured, expected return : 0
     count = 0
     timeout = 50
 
@@ -201,8 +189,13 @@ for ip in ip_list[s]:
                             break
                     else:
                         continue
+            driver.quit()
             break
         else:
+            # Condition to check if webpage has more than 1 link scraped from the HTML
+            # If website has no link to click, proceed on with next website instead of sending multiple get-requests
+            # Selenium requires "https://" to be able to work
+            # Socket library requires the removal of "https://" and purely use its domain to work
             if len(cleanLinks) > 1:
                 link = random.choice(cleanLinks)
                 ip_socket = []
@@ -211,8 +204,19 @@ for ip in ip_list[s]:
                     socketLink = domain
                 else:
                     seleniumLink = link
-                    socketLink = clean_domain(link)
+                    if "https://" in link:
+                        result = link[8:]
+                    elif "http://" in link:
+                        result = link[7:]
+                    else:
+                        result = link
 
+                    if "/" in result:
+                        result = result.split("/")[0]
+
+                    socketLink = result
+
+                # Attempt to get the IP address of the base domain
                 try:
                     socket_info = socket.getaddrinfo(socketLink, None)
                 except socket.gaierror as e:
@@ -222,12 +226,13 @@ for ip in ip_list[s]:
                     logging.error(str(e) + " error for " + str(socketLink))
                     continue
 
+                # Appending the IP of the base domain of the web site as resolved above
                 for info in socket_info:
                     ip_socket.append(info[4][0])
 
                 for ip_test in ip_socket:
-                    # Introducing sleep between 2 to 6 seconds to allow simulation of user behaviour
-                    time.sleep(np.random.randint(low=2, high=6))
+                    # Introducing sleep between 3 to 8 seconds to allow simulation of user behaviour
+                    time.sleep(np.random.randint(low=3, high=8))
                     if ip_test == ip:
                         try:
                             driver.get(seleniumLink)
@@ -265,10 +270,28 @@ for ip in ip_list[s]:
             else:
                 continue
 
-
-
     count = 0
 
+    # Kill chrome processes to clear memory to avoid virtual memory problem
+    try:
+        parent = psutil.Process(driver.service.process.pid)
+    except psutil.NoSuchProcess as nsp:
+        logging.error(str(nsp) + "parent")
+        continue
+    except AttributeError as ae:
+        logging.error(str(ae) + "parent")
+        continue
+    chromeProcesses = (parent.children(recursive=True))
+    if chromeProcesses != "":
+        for process in chromeProcesses:
+            try:
+                p = psutil.Process(process.pid)
+                p.kill()
+            except psutil.NoSuchProcess as nsp:
+                logging.error(nsp)
+                continue
+
+    # Kill chromedriver processes
     try:
         driver.quit()
     except TimeoutException as toe:
@@ -276,17 +299,16 @@ for ip in ip_list[s]:
     except UnexpectedAlertPresentException as uape:
         logging.exception(str(uape) + " unexpected alert present!")
         driver.switch_to.alert.accept()
-        driver.close()
     finally:
         driver.quit()
-
 
 # Terminate selenium
 try:
     driver.quit()
 except NameError as NE:
     logging.error(str(NE))
-    driver.close()  
+finally:
+    driver.quit()
 
 logging.info("Done with testing... Killing cmd and dumpcap now...")
 
